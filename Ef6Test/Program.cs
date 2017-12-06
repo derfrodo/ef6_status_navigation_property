@@ -12,11 +12,14 @@ namespace Ef6Test
     {
         static void Main(string[] args)
         {
-            Status status = null; 
+            Status status = null;
 
+            //Database.SetInitializer(new DropCreateDatabaseIfModelChanges<MyContext>());
+            //Database.SetInitializer(new DropCreateDatabaseAlways<MyContext>());
             using (var db = new MyContext())
             {
-                var statusList = db.StatusTable.Where(s => s.Message == "Test");
+                db.Database.Initialize(force: true);
+                var statusList = db.StatusTable.ToList().Where(s => s.Message == "Test");
                  status = statusList.FirstOrDefault();
 
 
@@ -26,11 +29,11 @@ namespace Ef6Test
                     db.StatusTable.Add(status);
                     db.SaveChanges();
                 }
-            }
+            //}
 
-            using (var db = new MyContext())
-            {
-                db.Set<Status>().Attach(status);
+            //using (var db = new MyContext())
+            //{
+            //    db.Set<Status>().Attach(status);
 
                 var request = new Request { Message = "someRequest", Status = status };
                 db.RequestTable.Add(request);
@@ -38,7 +41,7 @@ namespace Ef6Test
 
                 // Display all Blogs from the database 
                 var requests = (from r in db.RequestTable
-                                orderby r.Id
+                                orderby r.RequestId
                                 select r).ToList();
 
                 Console.WriteLine("All requests in the database:");
@@ -49,7 +52,7 @@ namespace Ef6Test
 
                 // Display all Statuses from the database 
                 var statuses = (from r in db.StatusTable
-                                orderby r.Id
+                                orderby r.StatusId
                                 select r).ToList();
 
                 Console.WriteLine("All statuses in the database:");
@@ -64,26 +67,29 @@ namespace Ef6Test
             }
         }
     }
-
     public class MyContext : DbContext
     {
+        protected override void OnModelCreating(DbModelBuilder modelBuilder)
+        {
+            modelBuilder.HasDefaultSchema("USR");
+        }
         public DbSet<Status> StatusTable { get; set; }
         public DbSet<Request> RequestTable { get; set; }
     }
 
     public class Status
     {
-        public int Id { get; set; }
+        public int StatusId { get; set; }
         public String Message { get; set; }
     }
 
     public class Request
     {
-        public int Id { get; set; }
+        public int RequestId { get; set; }
 
+        [ForeignKey("Status")]
         public int StatusId { get; set; }
 
-        [ForeignKey("StatusId")]
         public virtual Status Status { get; set; }
         public String Message { get; set; }
 
